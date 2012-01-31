@@ -12,7 +12,14 @@
 	 * Modified from http://joshbohde.com/blog/backbonejs-and-django
 	 */
 	Backbone.oldSync = Backbone.sync;
-	Backbone.sync = function( method, model, options ) {
+	
+	//copy the backbone main objects before extending them
+	// TODO: this does NOT work, we'd neeed to clone these perhaps?
+	Backbone.TastyCollection = Backbone.Collection;
+	Backbone.TastyModel = Backbone.Model;
+	
+	
+	Backbone.tastySync = function( method, model, options ) {
 		if ( method === 'create' ) {
 			var dfd = new $.Deferred();
 			
@@ -48,9 +55,9 @@
 		return Backbone.oldSync( method, model, options );
 	};
 
-	Backbone.Model.prototype.idAttribute = 'resource_uri';
+	Backbone.TastyModel.prototype.idAttribute = 'resource_uri';
 	
-	Backbone.Model.prototype.url = function() {
+	Backbone.TastyModel.prototype.url = function() {
 		// Use the id if possible
 		var url = this.id;
 		
@@ -73,7 +80,7 @@
 	/**
 	 * Return the first entry in 'data.objects' if it exists and is an array, or else just plain 'data'.
 	 */
-	Backbone.Model.prototype.parse = function( data ) {
+	Backbone.TastyModel.prototype.parse = function( data ) {
 		return data && data.objects && ( _.isArray( data.objects ) ? data.objects[ 0 ] : data.objects ) || data;
 	};
 	
@@ -81,7 +88,7 @@
 	 * Return 'data.objects' if it exists.
 	 * If present, the 'data.meta' object is assigned to the 'collection.meta' var.
 	 */
-	Backbone.Collection.prototype.parse = function( data ) {
+	Backbone.TastyCollection.prototype.parse = function( data ) {
 		if ( data && data.meta ) {
 			this.meta = data.meta;
 		}
@@ -89,7 +96,7 @@
 		return data && data.objects;
 	};
 	
-	Backbone.Collection.prototype.url = function( models ) {
+	Backbone.TastyCollection.prototype.url = function( models ) {
 		var url = this.urlRoot || ( models && models.length && models[0].urlRoot );
 		url = url && addSlash( url );
 		
@@ -105,6 +112,16 @@
 		
 		return url || null;
 	};
+
+
+
+  // Overrides default Sync and collections
+  // OPTIONAL if you explicitely extend TastyCollection and Tastymodels 
+  // (this is usefull to use more than one sync adapter)
+  
+  Backbone.Collection = Backbone.TastyCollection;
+  Backbone.Model = Backbone.TastyModel;
+  Backbone.sync = Backbone.tastySync
 
 	var addSlash = function( str ) {
 		return str + ( ( str.length > 0 && str.charAt( str.length - 1 ) === '/' ) ? '' : '/' );
